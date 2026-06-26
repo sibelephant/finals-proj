@@ -1,4 +1,4 @@
-const { buildReceiptData, buildTCCData } = require('../documents');
+import { buildReceiptData, buildTCCData } from '../documents.js';
 
 describe('document content logic', () => {
   const taxReturn = {

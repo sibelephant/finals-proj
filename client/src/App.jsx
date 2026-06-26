@@ -20,6 +20,8 @@ import {
   getTaxpayerDetails,
   getTaxpayers,
   getTaxReturnById,
+  getAuthHeaders,
+  getDocumentUrl,
   getTaxReturns,
   loginUser,
   registerUser,
@@ -104,8 +106,8 @@ function Landing() {
             <strong>2026</strong>
           </div>
           <div>
-            <span>Mock service status</span>
-            <strong>UI only</strong>
+            <span>API status</span>
+            <strong>Live server</strong>
           </div>
           <div>
             <span>Portal access</span>
@@ -147,12 +149,12 @@ function Register() {
 
   return (
     <Shell>
-      <AuthPanel title="Create taxpayer account" detail="Client-side validation only. A mock TIN is generated after submit.">
+      <AuthPanel title="Create taxpayer account" detail="Your details are validated before a TIN is issued by the server.">
         {success ? (
           <div className="success-box">
             <BadgeCheck size={28} />
             <h2>Registration saved</h2>
-            <p>Your mock Tax Identification Number is <strong>{success.tin}</strong>.</p>
+            <p>Your Tax Identification Number is <strong>{success.tin}</strong>.</p>
             <LinkButton to="/login">Continue to Login</LinkButton>
           </div>
         ) : (
@@ -185,7 +187,7 @@ function Login({ admin = false }) {
   const [values, setValues] = useState({ email: admin ? 'admin@etax.test' : 'amina.yusuf@example.com', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { loginAs } = useAuth();
+  const { setSession } = useAuth();
   const navigate = useNavigate();
 
   async function onSubmit(event) {
@@ -198,7 +200,7 @@ function Login({ admin = false }) {
     setError('');
     try {
       const response = await loginUser(values.email, values.password, admin ? 'admin' : 'taxpayer');
-      loginAs(admin ? 'admin' : 'taxpayer', response.user);
+      setSession(response);
       navigate(admin ? '/admin' : '/dashboard');
     } catch (caught) {
       setError(caught.message);
@@ -209,7 +211,7 @@ function Login({ admin = false }) {
 
   return (
     <Shell>
-      <AuthPanel title={admin ? 'Administrator login' : 'Taxpayer login'} detail="Mock login accepts the sample email shown with any non-empty password.">
+      <AuthPanel title={admin ? 'Administrator login' : 'Taxpayer login'} detail="Seeded test accounts use Password123 after database seeding.">
         <form onSubmit={onSubmit} className="form-grid">
           <Field label="Email address">
             <input value={values.email} onChange={(e) => setValues({ ...values, email: e.target.value })} />
@@ -336,7 +338,7 @@ function DeclarationForm() {
 
   return (
     <Shell>
-      <PageTitle title="Income declaration" detail="Enter annual income and deductions. The mock service returns a precomputed result." />
+      <PageTitle title="Income declaration" detail="Enter annual income and deductions. The server computes the tax result." />
       <Card className="form-card">
         <form onSubmit={onSubmit} className="form-grid two-col">
           {[
@@ -368,7 +370,7 @@ function ComputationResult() {
 
   return (
     <Shell>
-      <PageTitle title="Computation result" detail="Returned by the mock service layer. No calculation runs in the browser." />
+      <PageTitle title="Computation result" detail="Returned by the API. No tax calculation runs in the browser." />
       <section className="content-grid">
         <Metric label="CRA" value={formatCurrency(result.cra)} />
         <Metric label="Deductions" value={formatCurrency(result.totalDeductions)} />
@@ -422,7 +424,7 @@ function Payment() {
 
   return (
     <Shell>
-      <PageTitle title="Payment simulation" detail="This screen confirms a mock payment without connecting to a payment gateway." />
+      <PageTitle title="Payment simulation" detail="This screen confirms a simulated payment without connecting to a payment gateway." />
       <Card className="payment-card">
         {payment ? (
           <div className="success-box">
@@ -445,21 +447,33 @@ function Payment() {
 
 function Documents() {
   const location = useLocation();
+  const returnId = location.state?.taxReturn?.id;
+  async function download(type) {
+    const response = await fetch(getDocumentUrl(returnId, type), { headers: getAuthHeaders() });
+    if (!response.ok) return;
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${type}-${returnId}.pdf`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
   return (
     <Shell>
-      <PageTitle title="Receipt and TCC" detail="Downloads are stubbed in Phase 1. PDFKit is introduced in Phase 3." />
+      <PageTitle title="Receipt and TCC" detail="Download generated PDF documents for this paid tax return." />
       <section className="content-grid">
         <Card>
           <Download size={26} />
           <h2>Receipt ready</h2>
-          <p>Payment reference: {location.state?.payment?.paymentReference ?? 'Pending mock payment'}</p>
-          <Button disabled>Download Receipt</Button>
+          <p>Payment reference: {location.state?.payment?.paymentReference ?? 'Pending payment'}</p>
+          <Button disabled={!returnId} onClick={() => download('receipt')}>Download Receipt</Button>
         </Card>
         <Card>
           <FileText size={26} />
           <h2>TCC ready</h2>
-          <p>Tax Clearance Certificate will be generated as a PDF in Phase 3.</p>
-          <Button disabled>Download TCC</Button>
+          <p>Tax Clearance Certificate generated from the paid return.</p>
+          <Button disabled={!returnId} onClick={() => download('tcc')}>Download TCC</Button>
         </Card>
       </section>
     </Shell>
@@ -503,7 +517,7 @@ function AdminOverview() {
   }, []);
   return (
     <Shell>
-      <PageTitle title="Administrator overview" detail="Monitor mock compliance, revenue, and taxpayer activity." />
+      <PageTitle title="Administrator overview" detail="Monitor compliance, revenue, and taxpayer activity." />
       {!stats ? <LoadingState /> : (
         <section className="content-grid">
           <Metric label="Total taxpayers" value={stats.totalTaxpayers} />
@@ -529,7 +543,7 @@ function TaxpayerList() {
   const filtered = useMemo(() => (taxpayers ?? []).filter((item) => `${item.fullName} ${item.email} ${item.tin}`.toLowerCase().includes(query.toLowerCase())), [query, taxpayers]);
   return (
     <Shell>
-      <PageTitle title="Taxpayer list" detail="Search and inspect registered mock taxpayers." />
+      <PageTitle title="Taxpayer list" detail="Search and inspect registered taxpayers." />
       <Card>
         <div className="search-box"><Search size={18} /><input placeholder="Search by name, email, or TIN" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
         {!taxpayers ? <LoadingState /> : filtered.length === 0 ? <EmptyState title="No taxpayers found" detail="Adjust the search term." /> : (
@@ -570,7 +584,7 @@ function AdminTaxpayerDetail() {
         </Card>
         <Card className="wide">
           <h2>Filing history</h2>
-          {detail.returns.length ? <ReturnsTable returns={detail.returns} admin /> : <EmptyState title="No filings" detail="This taxpayer has no mock returns yet." />}
+          {detail.returns.length ? <ReturnsTable returns={detail.returns} admin /> : <EmptyState title="No filings" detail="This taxpayer has no returns yet." />}
         </Card>
       </section>
     </Shell>

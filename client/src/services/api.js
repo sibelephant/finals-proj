@@ -1,92 +1,91 @@
-import {
-  adminStats,
-  computedResult,
-  incomeDeclarations,
-  payments,
-  taxReturns,
-  users,
-} from '../mocks/data.js';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+const STORAGE_KEY = 'etax_session';
 
-const delay = (value, ms = 450) =>
-  new Promise((resolve) => {
-    setTimeout(() => resolve(structuredClone(value)), ms);
-  });
+function getToken() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}').token;
+  } catch {
+    return null;
+  }
+}
+
+async function request(path, options = {}) {
+  const token = getToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  const contentType = response.headers.get('content-type') || '';
+  const data = contentType.includes('application/json') ? await response.json() : await response.blob();
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Request failed. Please try again.');
+  }
+  return data;
+}
 
 export async function loginUser(email, password, role = 'taxpayer') {
-  if (!email || !password) {
-    throw new Error('Email and password are required.');
-  }
-  const user = users.find((item) => item.email.toLowerCase() === email.toLowerCase() && item.role === role);
-  if (!user) {
-    throw new Error('No matching mock account found for this role.');
-  }
-  return delay({ user, token: 'mock-token-not-used-in-phase-1' });
+  const session = await request('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  if (session.user.role !== role) throw new Error(`This account is not a ${role} account.`);
+  return session;
 }
 
 export async function registerUser(payload) {
-  const tin = `TIN-2026-${Math.floor(100000 + Math.random() * 899999)}`;
-  return delay({
-    user: {
-      id: `usr-${Date.now()}`,
-      ...payload,
-      tin,
-      role: 'taxpayer',
-      complianceStatus: 'Pending',
-      createdAt: new Date().toISOString().slice(0, 10),
-    },
+  return request('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
 }
 
 export async function getTaxReturns(userId) {
-  return delay(taxReturns.filter((item) => item.userId === userId));
+  const data = await request(`/users/${userId}/returns`);
+  return data.returns;
 }
 
 export async function getTaxReturnById(returnId) {
-  const taxReturn = taxReturns.find((item) => item.id === returnId);
-  const declaration = incomeDeclarations.find((item) => item.taxReturnId === returnId);
-  const payment = payments.find((item) => item.taxReturnId === returnId) ?? null;
-  return delay({ taxReturn, declaration, payment, computedResult });
+  return request(`/returns/${returnId}`);
 }
 
 export async function submitIncomeDeclaration(payload) {
-  return delay({
-    taxReturn: {
-      id: `ret-${Date.now()}`,
-      userId: payload.userId,
-      filingYear: new Date().getFullYear(),
-      filingStatus: 'submitted',
-      grossIncome: Number(payload.grossIncome),
-      taxableIncome: computedResult.taxableIncome,
-      taxPayable: computedResult.taxPayable,
-      submittedAt: new Date().toISOString().slice(0, 10),
-      paidAt: null,
-    },
-    declaration: payload,
-    computedResult,
+  const { userId, ...body } = payload;
+  return request('/returns', {
+    method: 'POST',
+    body: JSON.stringify(body),
   });
 }
 
 export async function confirmPayment({ taxReturnId, amount }) {
-  return delay({
-    id: `pay-${Date.now()}`,
-    taxReturnId,
-    amount,
-    paymentReference: `PAY-ETAX-${Math.floor(100000 + Math.random() * 899999)}`,
-    paymentStatus: 'successful',
-    paidAt: new Date().toISOString().slice(0, 10),
+  const data = await request('/payments', {
+    method: 'POST',
+    body: JSON.stringify({ taxReturnId, amount }),
   });
+  return data.payment;
 }
 
 export async function getAdminStats() {
-  return delay(adminStats);
+  return request('/admin/reports');
 }
 
 export async function getTaxpayers() {
-  return delay(users.filter((item) => item.role === 'taxpayer'));
+  const data = await request('/admin/taxpayers');
+  return data.taxpayers;
 }
 
 export async function getTaxpayerDetails(userId) {
-  const user = users.find((item) => item.id === userId);
-  const returns = taxReturns.filter((item) => item.userId === userId);
-  return delay({ user, returns });
+  return request(`/admin/taxpayers/${userId}`);
+}
+
+export function getDocumentUrl(returnId, type) {
+  return `${API_BASE_URL}/documents/${returnId}/${type}`;
+}
+
+export function getAuthHeaders() {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }

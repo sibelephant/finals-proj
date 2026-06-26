@@ -1,6 +1,6 @@
-const { fromKobo, percentOfKobo, toKobo } = require('./money');
+import { fromKobo, percentOfKobo, toKobo } from './money.js';
 
-const TAX_BANDS = [
+export const TAX_BANDS = [
   { band: 'First ₦300,000', limitKobo: 30000000, rate: 7 },
   { band: 'Next ₦300,000', limitKobo: 30000000, rate: 11 },
   { band: 'Next ₦500,000', limitKobo: 50000000, rate: 15 },
@@ -9,7 +9,7 @@ const TAX_BANDS = [
   { band: 'Above ₦3,200,000', limitKobo: Infinity, rate: 24 },
 ];
 
-function computeTax(input) {
+export function computeTax(input) {
   const grossKobo = toKobo(input.grossIncome);
   const pensionKobo = toKobo(input.pensionContribution);
   const lifeAssuranceKobo = toKobo(input.lifeAssurance);
@@ -46,8 +46,3 @@ function computeTax(input) {
     effectiveRate: grossKobo === 0 ? 0 : Number(((totalTaxKobo / grossKobo) * 100).toFixed(2)),
   };
 }
-
-module.exports = {
-  TAX_BANDS,
-  computeTax,
-};

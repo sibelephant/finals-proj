@@ -1,4 +1,4 @@
-const { computeTax } = require('../tax');
+import { computeTax } from '../tax.js';
 
 describe('computeTax', () => {
   it.each([

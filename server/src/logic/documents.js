@@ -1,4 +1,4 @@
-function buildReceiptData(taxReturn, payment) {
+export function buildReceiptData(taxReturn, payment) {
   return {
     documentType: 'receipt',
     receiptNumber: payment.paymentReference,
@@ -13,7 +13,7 @@ function buildReceiptData(taxReturn, payment) {
   };
 }
 
-function buildTCCData(taxReturn, payment) {
+export function buildTCCData(taxReturn, payment) {
   return {
     documentType: 'tax_clearance_certificate',
     certificateNumber: `TCC-${taxReturn.filingYear}-${taxReturn.id}`,
@@ -26,8 +26,3 @@ function buildTCCData(taxReturn, payment) {
     issuedAt: payment.paidAt,
   };
 }
-
-module.exports = {
-  buildReceiptData,
-  buildTCCData,
-};

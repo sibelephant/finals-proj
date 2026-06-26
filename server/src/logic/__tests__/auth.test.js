@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
-const {
+import jwt from 'jsonwebtoken';
+import {
   authorizeRole,
   generateTIN,
   hashPassword,
@@ -7,7 +7,7 @@ const {
   TIN_PATTERN,
   verifyPassword,
   verifyToken,
-} = require('../auth');
+} from '../auth.js';
 
 describe('auth logic', () => {
   it('hashes and verifies passwords without storing plaintext', async () => {

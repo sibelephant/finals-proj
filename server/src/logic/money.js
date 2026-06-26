@@ -1,4 +1,4 @@
-function toKobo(value) {
+export function toKobo(value) {
   const number = Number(value || 0);
   if (!Number.isFinite(number)) {
     throw new Error('Amount must be a finite number.');
@@ -6,16 +6,10 @@ function toKobo(value) {
   return Math.round(number * 100);
 }
 
-function fromKobo(kobo) {
+export function fromKobo(kobo) {
   return Number((kobo / 100).toFixed(2));
 }
 
-function percentOfKobo(amountKobo, percent) {
+export function percentOfKobo(amountKobo, percent) {
   return Math.round((amountKobo * percent) / 100);
 }
-
-module.exports = {
-  toKobo,
-  fromKobo,
-  percentOfKobo,
-};

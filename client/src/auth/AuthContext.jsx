@@ -1,43 +1,34 @@
 import { createContext, useContext, useMemo, useState } from 'react';
 
 const AuthContext = createContext(null);
-
-const mockProfiles = {
-  taxpayer: {
-    id: 'usr-001',
-    fullName: 'Amina Yusuf',
-    email: 'amina.yusuf@example.com',
-    phone: '08034567890',
-    address: '14 Marina Road, Lagos',
-    tin: 'TIN-2026-001248',
-    role: 'taxpayer',
-  },
-  admin: {
-    id: 'usr-900',
-    fullName: 'Compliance Officer',
-    email: 'admin@etax.test',
-    phone: '08000000000',
-    address: 'Revenue Service HQ',
-    tin: 'ADMIN-0001',
-    role: 'admin',
-  },
-};
+const STORAGE_KEY = 'etax_session';
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [sessionState, setSessionState] = useState(() => {
+    try {
+      const session = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      return { user: session.user ?? null, token: session.token ?? null };
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+      return { user: null, token: null };
+    }
+  });
 
   const value = useMemo(
     () => ({
-      user,
-      role: user?.role ?? null,
-      loginAs(role, profile = {}) {
-        setUser({ ...mockProfiles[role], ...profile, role });
+      user: sessionState.user,
+      token: sessionState.token,
+      role: sessionState.user?.role ?? null,
+      setSession(session) {
+        setSessionState({ user: session.user, token: session.token });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
       },
       logout() {
-        setUser(null);
+        setSessionState({ user: null, token: null });
+        localStorage.removeItem(STORAGE_KEY);
       },
     }),
-    [user],
+    [sessionState],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

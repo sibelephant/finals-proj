@@ -1,6 +1,6 @@
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function validateRegistration(payload = {}) {
+export function validateRegistration(payload = {}) {
   const errors = {};
   if (!String(payload.fullName || '').trim()) errors.fullName = 'Full name is required.';
   if (!emailPattern.test(String(payload.email || '').trim())) errors.email = 'A valid email address is required.';
@@ -13,7 +13,7 @@ function validateRegistration(payload = {}) {
   return { valid: Object.keys(errors).length === 0, errors };
 }
 
-function validateIncomeDeclaration(payload = {}) {
+export function validateIncomeDeclaration(payload = {}) {
   const errors = {};
   const grossIncome = toNumber(payload.grossIncome);
   const employmentIncome = toNumber(payload.employmentIncome);
@@ -59,8 +59,3 @@ function toNumber(value) {
   if (value === '' || value === null || value === undefined) return 0;
   return Number(value);
 }
-
-module.exports = {
-  validateIncomeDeclaration,
-  validateRegistration,
-};

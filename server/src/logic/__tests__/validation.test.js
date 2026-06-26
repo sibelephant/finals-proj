@@ -1,4 +1,4 @@
-const { validateIncomeDeclaration, validateRegistration } = require('../validation');
+import { validateIncomeDeclaration, validateRegistration } from '../validation.js';
 
 describe('validation logic', () => {
   it('accepts a valid registration payload', () => {
