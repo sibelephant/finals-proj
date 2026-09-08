@@ -1,5 +1,6 @@
 import sequelize from '../config/sequelize.js';
 import defineAdminLog from './adminLog.js';
+import defineBankTransaction from './bankTransaction.js';
 import defineIncomeDeclaration from './incomeDeclaration.js';
 import definePayment from './payment.js';
 import defineTaxReturn from './taxReturn.js';
@@ -11,6 +12,7 @@ const models = {
   IncomeDeclaration: defineIncomeDeclaration(sequelize),
   Payment: definePayment(sequelize),
   AdminLog: defineAdminLog(sequelize),
+  BankTransaction: defineBankTransaction(sequelize),
 };
 
 Object.values(models).forEach((model) => {

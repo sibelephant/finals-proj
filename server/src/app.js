@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
+import bankStatementRoutes from './routes/bank-statements.js';
 import documentRoutes from './routes/documents.js';
 import paymentRoutes from './routes/payments.js';
 import returnRoutes from './routes/returns.js';
@@ -25,6 +26,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/bank-statements', bankStatementRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

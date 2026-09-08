@@ -85,6 +85,29 @@ export function getDocumentUrl(returnId, type) {
   return `${API_BASE_URL}/documents/${returnId}/${type}`;
 }
 
+export async function uploadBankStatement(file) {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(`${API_BASE_URL}/bank-statements/upload`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data?.message || 'Upload failed.');
+  return data;
+}
+
+export async function getBankTransactions() {
+  const data = await request('/bank-statements');
+  return data.transactions;
+}
+
+export async function deleteBankTransaction(id) {
+  return request(`/bank-statements/${id}`, { method: 'DELETE' });
+}
+
 export function getAuthHeaders() {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};

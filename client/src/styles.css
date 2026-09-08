@@ -14,9 +14,9 @@
   --danger: #d44c47;
   --success: #448361;
   --shadow: 0 1px 2px rgba(15, 15, 15, 0.05), 0 8px 24px rgba(15, 15, 15, 0.04);
-  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif;
-  --font-serif: Lyon-Text, Georgia, ui-serif, serif;
-  --font-mono: iawriter-mono, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-sans: "Space Grotesk", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-serif: "Space Grotesk", Georgia, ui-serif, serif;
+  --font-mono: "Space Grotesk", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-family: var(--font-sans);
   color: var(--text);
   background: var(--bg);
@@ -30,8 +30,8 @@ body {
   margin: 0;
   min-width: 320px;
   background: var(--bg);
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.55;
 }
 
 a {
@@ -78,8 +78,9 @@ main {
 
 .brand {
   color: var(--text);
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
 }
 
 .topbar nav {
@@ -90,6 +91,7 @@ main {
 .topbar nav a {
   color: var(--text);
   font-size: 0.92rem;
+  font-weight: 550;
   padding: 6px 8px;
   border-radius: 5px;
 }
@@ -108,20 +110,21 @@ main {
 .auth-card h1 {
   margin: 0;
   line-height: 1.08;
-  letter-spacing: 0;
+  letter-spacing: -0.02em;
   font-weight: 700;
 }
 
 .hero-copy h1 {
   max-width: 760px;
-  font-size: clamp(2.1rem, 5.4vw, 4.1rem);
+  font-size: clamp(2.2rem, 5.6vw, 4.2rem);
+  letter-spacing: -0.03em;
 }
 
 .hero-copy p {
   max-width: 660px;
   color: var(--muted);
-  font-size: 1.02rem;
-  line-height: 1.65;
+  font-size: 1.08rem;
+  line-height: 1.7;
 }
 
 .hero-panel {
@@ -144,13 +147,25 @@ main {
   background: var(--surface-strong);
 }
 
+.hero-panel div span {
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hero-panel div strong {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
 .eyebrow {
   margin: 0 0 10px;
   color: var(--secondary);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 650;
-  letter-spacing: 0;
-  text-transform: none;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .btn {
@@ -208,8 +223,9 @@ main {
 
 .card h2 {
   margin: 0 0 16px;
-  font-size: 1.04rem;
-  font-weight: 700;
+  font-size: 1.15rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 
 .auth-layout {
@@ -244,8 +260,10 @@ main {
   display: grid;
   gap: 8px;
   color: var(--muted);
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 input,
@@ -274,7 +292,7 @@ textarea:focus {
 .error-text,
 .form-error {
   color: var(--danger);
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .form-error {
@@ -320,6 +338,7 @@ textarea:focus {
 
 .page-title h1 {
   font-size: clamp(1.68rem, 3.6vw, 2.45rem);
+  letter-spacing: -0.02em;
 }
 
 .page-title p {
@@ -350,13 +369,15 @@ textarea:focus {
 
 .metric span {
   color: var(--muted);
-  font-size: 0.84rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .metric strong {
   overflow-wrap: anywhere;
-  font-size: 1.26rem;
+  font-size: 1.35rem;
   font-weight: 650;
 }
 
@@ -369,7 +390,10 @@ textarea:focus {
 
 .detail-list dt {
   color: var(--muted);
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .detail-list dd {
@@ -402,9 +426,10 @@ td {
 
 th {
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 650;
-  text-transform: none;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 tbody tr:hover {
@@ -417,9 +442,10 @@ tbody tr:hover {
   min-height: 28px;
   padding: 0 9px;
   border-radius: 4px;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   font-weight: 650;
-  text-transform: capitalize;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .badge-paid,
@@ -458,7 +484,10 @@ tbody tr:hover {
 
 .amount-label {
   color: var(--muted);
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .amount {
@@ -466,6 +495,7 @@ tbody tr:hover {
   margin: 10px 0 18px;
   font-size: clamp(2rem, 6vw, 3.25rem);
   font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 .search-box {
@@ -479,6 +509,43 @@ tbody tr:hover {
 .search-box input {
   border: 0;
   outline: 0;
+}
+
+.upload-area {
+  display: grid;
+  gap: 14px;
+}
+
+.upload-area input[type="file"] {
+  min-height: 44px;
+  padding: 8px;
+  border: 1px dashed var(--border);
+  border-radius: 5px;
+  background: var(--surface-strong);
+  cursor: pointer;
+}
+
+.narration-cell {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-breakdown {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.category-breakdown span {
+  text-transform: capitalize;
+}
+
+.parse-errors {
+  color: var(--warning);
+  margin-top: 8px;
+  display: block;
 }
 
 .bar-chart {
