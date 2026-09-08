@@ -26,7 +26,7 @@ router.get('/taxpayers/:id', async (req, res, next) => {
       include: [{ model: models.TaxReturn, as: 'taxReturns' }],
     });
     if (!user || user.role !== 'taxpayer') return res.status(404).json({ message: 'Taxpayer not found.' });
-    return res.json({ user: serializeUser(user), returns: user.taxReturns.map(serializeTaxReturn) });
+    return res.json({ user: await serializeUser(user), returns: user.taxReturns.map(serializeTaxReturn) });
   } catch (error) {
     return next(error);
   }
@@ -34,15 +34,24 @@ router.get('/taxpayers/:id', async (req, res, next) => {
 
 router.get('/reports', async (req, res, next) => {
   try {
-    const [totalTaxpayers, paidReturns, pendingReturns, payments] = await Promise.all([
+    const [totalTaxpayers, distinctCompliantTaxpayers, pendingReturns, payments] = await Promise.all([
       models.User.count({ where: { role: 'taxpayer' } }),
-      models.TaxReturn.count({ where: { filingStatus: 'paid' } }),
+      models.TaxReturn.count({
+        distinct: true,
+        col: 'user_id',
+        where: { filingStatus: 'paid' }
+      }),
       models.TaxReturn.count({ where: { filingStatus: { [Op.ne]: 'paid' } } }),
       models.Payment.findAll(),
     ]);
+    
+    // Count total paid returns for backward compatibility
+    const paidReturns = await models.TaxReturn.count({ where: { filingStatus: 'paid' } });
+    
     const totalRevenue = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
     const revenueByPeriod = buildRevenueByPeriod(payments);
-    const complianceRate = totalTaxpayers === 0 ? 0 : Math.round((paidReturns / totalTaxpayers) * 100);
+    const complianceRate = totalTaxpayers === 0 ? 0 : Math.round((distinctCompliantTaxpayers / totalTaxpayers) * 100);
+    
     return res.json({ totalTaxpayers, totalRevenue, complianceRate, pendingReturns, paidReturns, revenueByPeriod });
   } catch (error) {
     return next(error);
@@ -51,12 +60,32 @@ router.get('/reports', async (req, res, next) => {
 
 function buildRevenueByPeriod(payments) {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const totals = months.map((period) => ({ period, amount: 0 }));
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  
+  // Create rolling 6-month window ending at current month
+  const revenueByMonth = {};
+  
+  // Initialize last 6 months (including current)
+  for (let i = 5; i >= 0; i--) {
+    const monthIndex = (currentMonth - i + 12) % 12;
+    const year = now.getFullYear() - (currentMonth - i < 0 ? 1 : 0);
+    const key = `${year}-${monthIndex}`;
+    revenueByMonth[key] = { period: months[monthIndex], amount: 0 };
+  }
+  
   payments.forEach((payment) => {
-    const index = new Date(payment.paidAt).getMonth();
-    totals[index].amount += Number(payment.amount);
+    const paymentDate = new Date(payment.paidAt);
+    const paymentMonth = paymentDate.getMonth();
+    const paymentYear = paymentDate.getFullYear();
+    const key = `${paymentYear}-${paymentMonth}`;
+    
+    if (revenueByMonth[key]) {
+      revenueByMonth[key].amount += Number(payment.amount);
+    }
   });
-  return totals.slice(0, 6);
+  
+  return Object.values(revenueByMonth);
 }
 
 export default router;

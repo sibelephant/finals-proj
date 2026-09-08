@@ -1,7 +1,12 @@
-export function serializeUser(user) {
+export async function serializeUser(user) {
   if (!user) return null;
   const plain = user.toJSON ? user.toJSON() : user;
   const { passwordHash, ...safe } = plain;
+
+  if (user.getComplianceStatus && user.role === 'taxpayer') {
+    safe.complianceStatus = await user.getComplianceStatus();
+  }
+
   return safe;
 }
 
@@ -11,7 +16,7 @@ export function serializeTaxReturn(taxReturn) {
   return {
     ...plain,
     grossIncome: numberOrZero(plain.grossIncome),
-    cra: numberOrZero(plain.cra),
+    reliefAmount: numberOrZero(plain.reliefAmount),
     totalDeductions: numberOrZero(plain.totalDeductions),
     taxableIncome: numberOrZero(plain.taxableIncome),
     taxPayable: numberOrZero(plain.taxPayable),
@@ -39,6 +44,9 @@ export function serializeDeclaration(declaration) {
     pensionContribution: numberOrZero(plain.pensionContribution),
     lifeAssurance: numberOrZero(plain.lifeAssurance),
     nhfContribution: numberOrZero(plain.nhfContribution),
+    rentPaidAnnual: numberOrZero(plain.rentPaidAnnual),
+    nhisContribution: numberOrZero(plain.nhisContribution),
+    housingLoanInterest: numberOrZero(plain.housingLoanInterest),
   };
 }
 

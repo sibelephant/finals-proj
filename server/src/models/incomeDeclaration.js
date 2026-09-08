@@ -17,6 +17,9 @@ export default function defineIncomeDeclaration(sequelize) {
       pensionContribution: { type: DataTypes.DECIMAL(14, 2), allowNull: false, defaultValue: 0 },
       lifeAssurance: { type: DataTypes.DECIMAL(14, 2), allowNull: false, defaultValue: 0 },
       nhfContribution: { type: DataTypes.DECIMAL(14, 2), allowNull: false, defaultValue: 0 },
+      rentPaidAnnual: { type: DataTypes.DECIMAL(14, 2), allowNull: true, defaultValue: 0 },
+      nhisContribution: { type: DataTypes.DECIMAL(14, 2), allowNull: true, defaultValue: 0 },
+      housingLoanInterest: { type: DataTypes.DECIMAL(14, 2), allowNull: true, defaultValue: 0 },
     },
     {
       sequelize,

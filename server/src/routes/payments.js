@@ -24,7 +24,7 @@ router.post('/', requireAuth, requireRole('taxpayer'), async (req, res, next) =>
         { transaction },
       );
       await taxReturn.update({ filingStatus: 'paid', paidAt }, { transaction });
-      await models.User.update({ complianceStatus: 'compliant' }, { where: { id: taxReturn.userId }, transaction });
+      // complianceStatus is now derived, no need to update it
       return created;
     });
 

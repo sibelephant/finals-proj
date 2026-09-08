@@ -3,6 +3,13 @@ import { sequelize } from './models/index.js';
 
 const port = Number(process.env.PORT || 4000);
 
+// Validate required environment variables at startup
+if (!process.env.JWT_SECRET) {
+  console.error('ERROR: JWT_SECRET environment variable is required but not set.');
+  console.error('Please set JWT_SECRET before starting the server.');
+  process.exit(1);
+}
+
 try {
   await sequelize.authenticate();
   app.listen(port, () => {

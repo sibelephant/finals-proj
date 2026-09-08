@@ -2,7 +2,6 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 export const BCRYPT_COST = 10;
-const DEFAULT_JWT_SECRET = 'phase-2-test-secret-change-in-phase-3';
 export const TIN_PATTERN = /^TIN-\d{4}-\d{6}$/;
 
 export async function hashPassword(plaintext) {
@@ -20,13 +19,19 @@ export function generateTIN(date = new Date(), randomNumber = Math.floor(Math.ra
 }
 
 export function signToken(payload, options = {}) {
-  const secret = options.secret || process.env.JWT_SECRET || DEFAULT_JWT_SECRET;
+  const secret = options.secret || process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET is required for token signing');
+  }
   const expiresIn = options.expiresIn || '1h';
   return jwt.sign(payload, secret, { expiresIn });
 }
 
 export function verifyToken(token, options = {}) {
-  const secret = options.secret || process.env.JWT_SECRET || DEFAULT_JWT_SECRET;
+  const secret = options.secret || process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET is required for token verification');
+  }
   return jwt.verify(token, secret);
 }
 

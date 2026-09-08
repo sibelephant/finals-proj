@@ -6,6 +6,21 @@ export default function defineUser(sequelize) {
       User.hasMany(models.TaxReturn, { foreignKey: 'userId', as: 'taxReturns' });
       User.hasMany(models.AdminLog, { foreignKey: 'userId', as: 'adminLogs' });
     }
+
+    // Derive compliance status from most recent tax return
+    async getComplianceStatus() {
+      const latestReturn = await sequelize.models.TaxReturn.findOne({
+        where: { userId: this.id },
+        order: [['filingYear', 'DESC']],
+        limit: 1,
+      });
+      
+      if (!latestReturn) {
+        return 'pending'; // No returns filed
+      }
+      
+      return latestReturn.filingStatus === 'paid' ? 'compliant' : 'pending';
+    }
   }
 
   User.init(
@@ -18,7 +33,6 @@ export default function defineUser(sequelize) {
       address: { type: DataTypes.TEXT, allowNull: false },
       tin: { type: DataTypes.STRING, allowNull: false, unique: true },
       role: { type: DataTypes.ENUM('taxpayer', 'admin'), allowNull: false, defaultValue: 'taxpayer' },
-      complianceStatus: { type: DataTypes.ENUM('pending', 'compliant'), allowNull: false, defaultValue: 'pending' },
     },
     {
       sequelize,

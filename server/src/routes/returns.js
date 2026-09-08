@@ -20,6 +20,9 @@ router.post('/', requireAuth, requireRole('taxpayer'), async (req, res, next) =>
       pensionContribution: req.body.pensionContribution || 0,
       lifeAssurance: req.body.lifeAssurance || 0,
       nhfContribution: req.body.nhfContribution || 0,
+      rentPaidAnnual: req.body.rentPaidAnnual || 0,
+      nhisContribution: req.body.nhisContribution || 0,
+      housingLoanInterest: req.body.housingLoanInterest || 0,
     };
 
     const created = await sequelize.transaction(async (transaction) => {
@@ -29,7 +32,8 @@ router.post('/', requireAuth, requireRole('taxpayer'), async (req, res, next) =>
           filingYear: req.body.filingYear || new Date().getFullYear(),
           filingStatus: 'submitted',
           grossIncome: payload.grossIncome,
-          cra: result.cra,
+          reliefAmount: result.reliefAmount,
+          reliefBasis: result.reliefBasis,
           totalDeductions: result.totalDeductions,
           taxableIncome: result.taxableIncome,
           bandBreakdown: result.bandBreakdown,
@@ -70,7 +74,8 @@ router.get('/:id', requireAuth, async (req, res, next) => {
       declaration: serializeDeclaration(taxReturn.incomeDeclaration),
       payment: serializePayment(taxReturn.payment),
       computedResult: {
-        cra: Number(taxReturn.cra),
+        reliefAmount: Number(taxReturn.reliefAmount),
+        reliefBasis: taxReturn.reliefBasis,
         totalDeductions: Number(taxReturn.totalDeductions),
         taxableIncome: Number(taxReturn.taxableIncome),
         bandBreakdown: taxReturn.bandBreakdown,
