@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { Op } from 'sequelize';
-import models from '../models/index.js';
+import { Op, fn, col, literal } from 'sequelize';
+import models, { sequelize } from '../models/index.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { serializeTaxReturn, serializeUser } from '../utils/serialize.js';
 
@@ -14,6 +14,7 @@ router.get('/taxpayers', async (req, res, next) => {
       where: { role: 'taxpayer' },
       order: [['createdAt', 'DESC']],
     });
+    await models.AdminLog.create({ userId: req.auth.sub, action: 'LIST_TAXPAYERS', metadata: { count: taxpayers.length } });
     return res.json({ taxpayers: taxpayers.map(serializeUser) });
   } catch (error) {
     return next(error);
@@ -26,6 +27,7 @@ router.get('/taxpayers/:id', async (req, res, next) => {
       include: [{ model: models.TaxReturn, as: 'taxReturns' }],
     });
     if (!user || user.role !== 'taxpayer') return res.status(404).json({ message: 'Taxpayer not found.' });
+    await models.AdminLog.create({ userId: req.auth.sub, action: 'VIEW_TAXPAYER', metadata: { targetUserId: req.params.id } });
     return res.json({ user: await serializeUser(user), returns: user.taxReturns.map(serializeTaxReturn) });
   } catch (error) {
     return next(error);
@@ -34,58 +36,76 @@ router.get('/taxpayers/:id', async (req, res, next) => {
 
 router.get('/reports', async (req, res, next) => {
   try {
-    const [totalTaxpayers, distinctCompliantTaxpayers, pendingReturns, payments] = await Promise.all([
-      models.User.count({ where: { role: 'taxpayer' } }),
-      models.TaxReturn.count({
-        distinct: true,
-        col: 'user_id',
-        where: { filingStatus: 'paid' }
-      }),
-      models.TaxReturn.count({ where: { filingStatus: { [Op.ne]: 'paid' } } }),
-      models.Payment.findAll(),
-    ]);
-    
-    // Count total paid returns for backward compatibility
-    const paidReturns = await models.TaxReturn.count({ where: { filingStatus: 'paid' } });
-    
-    const totalRevenue = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
-    const revenueByPeriod = buildRevenueByPeriod(payments);
-    const complianceRate = totalTaxpayers === 0 ? 0 : Math.round((distinctCompliantTaxpayers / totalTaxpayers) * 100);
-    
-    return res.json({ totalTaxpayers, totalRevenue, complianceRate, pendingReturns, paidReturns, revenueByPeriod });
+    // Compute a 6-month window at the DB level
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+    const [totalTaxpayers, distinctCompliantTaxpayers, pendingReturns, paidReturns, totalRevenue, revenueByPeriod] =
+      await Promise.all([
+        models.User.count({ where: { role: 'taxpayer' } }),
+        models.TaxReturn.count({
+          distinct: true,
+          col: 'user_id',
+          where: { filingStatus: 'paid' },
+        }),
+        models.TaxReturn.count({ where: { filingStatus: { [Op.ne]: 'paid' } } }),
+        models.TaxReturn.count({ where: { filingStatus: 'paid' } }),
+        models.Payment.sum('amount'),
+        // Aggregate payments by month directly in the database
+        models.Payment.findAll({
+          attributes: [
+            [fn('DATE_TRUNC', 'month', col('paid_at')), 'month'],
+            [fn('SUM', col('amount')), 'total'],
+          ],
+          where: { paid_at: { [Op.gte]: sixMonthsAgo } },
+          group: [fn('DATE_TRUNC', 'month', col('paid_at'))],
+          order: [[fn('DATE_TRUNC', 'month', col('paid_at')), 'ASC']],
+          raw: true,
+        }),
+      ]);
+
+    const complianceRate =
+      totalTaxpayers === 0 ? 0 : Math.round((distinctCompliantTaxpayers / totalTaxpayers) * 100);
+
+    await models.AdminLog.create({ userId: req.auth.sub, action: 'VIEW_REPORTS', metadata: {} });
+    return res.json({
+      totalRevenue: Number(totalRevenue || 0),
+      complianceRate,
+      pendingReturns,
+      paidReturns,
+      revenueByPeriod: buildRevenueByPeriod(revenueByPeriod, now),
+    });
   } catch (error) {
     return next(error);
   }
 });
 
-function buildRevenueByPeriod(payments) {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const now = new Date();
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function buildRevenueByPeriod(rows, now = new Date()) {
   const currentMonth = now.getMonth();
-  
-  // Create rolling 6-month window ending at current month
-  const revenueByMonth = {};
-  
-  // Initialize last 6 months (including current)
+  const currentYear = now.getFullYear();
+
+  // Build ordered 6-month slots
+  const slots = [];
   for (let i = 5; i >= 0; i--) {
-    const monthIndex = (currentMonth - i + 12) % 12;
-    const year = now.getFullYear() - (currentMonth - i < 0 ? 1 : 0);
-    const key = `${year}-${monthIndex}`;
-    revenueByMonth[key] = { period: months[monthIndex], amount: 0 };
+    const date = new Date(currentYear, currentMonth - i, 1);
+    slots.push({
+      year: date.getFullYear(),
+      month: date.getMonth(),
+      period: MONTH_NAMES[date.getMonth()],
+      amount: 0,
+    });
   }
-  
-  payments.forEach((payment) => {
-    const paymentDate = new Date(payment.paidAt);
-    const paymentMonth = paymentDate.getMonth();
-    const paymentYear = paymentDate.getFullYear();
-    const key = `${paymentYear}-${paymentMonth}`;
-    
-    if (revenueByMonth[key]) {
-      revenueByMonth[key].amount += Number(payment.amount);
-    }
-  });
-  
-  return Object.values(revenueByMonth);
+
+  // Fill in the DB-aggregated amounts
+  for (const row of rows) {
+    const d = new Date(row.month);
+    const slot = slots.find((s) => s.year === d.getFullYear() && s.month === d.getMonth());
+    if (slot) slot.amount = Number(row.total);
+  }
+
+  return slots.map(({ period, amount }) => ({ period, amount }));
 }
 
 export default router;

@@ -1,13 +1,22 @@
 import { Router } from 'express';
 import { UniqueConstraintError } from 'sequelize';
+import rateLimit from 'express-rate-limit';
 import models from '../models/index.js';
 import { generateTIN, hashPassword, signToken, verifyPassword } from '../logic/auth.js';
 import { validateRegistration } from '../logic/validation.js';
 import { serializeUser } from '../utils/serialize.js';
 
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many requests. Please try again in 15 minutes.' },
+});
+
 const router = Router();
 
-router.post('/register', async (req, res, next) => {
+router.post('/register', authLimiter, async (req, res, next) => {
   try {
     const validation = validateRegistration(req.body);
     if (!validation.valid) return res.status(400).json(validation);
@@ -54,7 +63,7 @@ router.post('/register', async (req, res, next) => {
   }
 });
 
-router.post('/login', async (req, res, next) => {
+router.post('/login', authLimiter, async (req, res, next) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password are required.' });

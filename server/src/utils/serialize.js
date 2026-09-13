@@ -53,3 +53,17 @@ export function serializeDeclaration(declaration) {
 function numberOrZero(value) {
   return Number(value || 0);
 }
+
+export function serializeTransaction(t) {
+  return {
+    id: t.id,
+    transactionDate: t.transactionDate,
+    narration: t.narration,
+    debit: Number(t.debit),
+    credit: Number(t.credit),
+    balance: t.balance !== null ? Number(t.balance) : null,
+    category: t.category,
+    sourceFile: t.sourceFile,
+    createdAt: t.createdAt,
+  };
+}

@@ -3,6 +3,7 @@ import multer from 'multer';
 import models from '../models/index.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { parseBankStatementCSV } from '../logic/bankStatementParser.js';
+import { serializeTransaction } from '../utils/serialize.js';
 
 const router = Router();
 const upload = multer({
@@ -76,19 +77,5 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
     return next(error);
   }
 });
-
-function serializeTransaction(t) {
-  return {
-    id: t.id,
-    transactionDate: t.transactionDate,
-    narration: t.narration,
-    debit: Number(t.debit),
-    credit: Number(t.credit),
-    balance: t.balance !== null ? Number(t.balance) : null,
-    category: t.category,
-    sourceFile: t.sourceFile,
-    createdAt: t.createdAt,
-  };
-}
 
 export default router;

@@ -14,7 +14,7 @@ dotenv.config({ quiet: true });
 const app = express();
 
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
-app.use(express.json());
+app.use(express.json({ limit: '64kb' }));
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true });
