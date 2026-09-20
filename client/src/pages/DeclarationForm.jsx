@@ -66,12 +66,6 @@ export default function DeclarationForm() {
       const v = values[key];
       if (v !== '' && Number(v) < 0) next[key] = 'Amount cannot be negative.';
     });
-    if (Number(values.employmentIncome || 0) + Number(values.businessIncome || 0) > gross) {
-      next.businessIncome = 'Income parts cannot exceed gross income.';
-    }
-    if (isLegacy && Number(values.pensionContribution || 0) > gross * 0.08) {
-      next.pensionContribution = 'Pension contribution cannot exceed 8% of gross income.';
-    }
     setErrors(next);
     return Object.keys(next).length === 0;
   }

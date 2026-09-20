@@ -53,8 +53,6 @@ function selectProfile(filingYear) {
   throw new Error(`No tax profile available for filing year ${filingYear}`);
 }
 
-export const TAX_BANDS = TAX_PROFILES.legacy_pita.bands; // For backward compatibility
-
 export function computeTax(input) {
   const filingYear = input.filingYear || 2025; // Default to legacy for backward compatibility
   const profile = selectProfile(filingYear);

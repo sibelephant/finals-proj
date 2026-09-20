@@ -1,5 +1,6 @@
+import { STORAGE_KEY } from '../auth/AuthContext.jsx';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
-const STORAGE_KEY = 'etax_session';
 
 function getToken() {
   try {
@@ -60,10 +61,10 @@ export async function submitIncomeDeclaration(payload) {
   });
 }
 
-export async function confirmPayment({ taxReturnId, amount }) {
+export async function confirmPayment({ taxReturnId }) {
   const data = await request('/payments', {
     method: 'POST',
-    body: JSON.stringify({ taxReturnId, amount }),
+    body: JSON.stringify({ taxReturnId }),
   });
   return data.payment;
 }

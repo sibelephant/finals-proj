@@ -21,7 +21,7 @@ export default function Payment() {
     setLoading(true);
     setError(null);
     try {
-      const response = await confirmPayment({ taxReturnId: taxReturn?.id, amount });
+      const response = await confirmPayment({ taxReturnId: taxReturn?.id });
       setPayment(response);
     } catch (err) {
       setError(err.message || 'Payment failed. Please try again.');

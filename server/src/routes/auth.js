@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { UniqueConstraintError } from 'sequelize';
 import rateLimit from 'express-rate-limit';
 import models from '../models/index.js';
 import { generateTIN, hashPassword, signToken, verifyPassword } from '../logic/auth.js';
@@ -24,38 +23,16 @@ router.post('/register', authLimiter, async (req, res, next) => {
     const existing = await models.User.findOne({ where: { email: req.body.email } });
     if (existing) return res.status(409).json({ message: 'Email address is already registered.' });
 
-    // Retry loop for TIN collision handling
-    const maxAttempts = 5;
-    let user = null;
-    
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        user = await models.User.create({
-          fullName: req.body.fullName,
-          email: req.body.email,
-          passwordHash: await hashPassword(req.body.password),
-          phone: req.body.phone,
-          address: req.body.address,
-          tin: generateTIN(),
-          role: 'taxpayer',
-        });
-        break; // Success, exit retry loop
-      } catch (error) {
-        if (error instanceof UniqueConstraintError && 
-            error.errors.some(err => err.path === 'tin') && 
-            attempt < maxAttempts) {
-          // TIN collision detected, try again with new TIN
-          continue;
-        }
-        // Re-throw any other error immediately
-        throw error;
-      }
-    }
-    
-    if (!user) {
-      return res.status(500).json({ message: 'Failed to generate unique TIN after multiple attempts.' });
-    }
-    
+    const user = await models.User.create({
+      fullName: req.body.fullName,
+      email: req.body.email,
+      passwordHash: await hashPassword(req.body.password),
+      phone: req.body.phone,
+      address: req.body.address,
+      tin: generateTIN(),
+      role: 'taxpayer',
+    });
+
     const token = signToken({ sub: user.id, role: user.role });
     return res.status(201).json({ user: await serializeUser(user), token });
   } catch (error) {

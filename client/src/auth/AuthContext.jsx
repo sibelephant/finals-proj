@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, useState } from 'react';
 
 const AuthContext = createContext(null);
-const STORAGE_KEY = 'etax_session';
+export const STORAGE_KEY = 'etax_session';
 
 export function AuthProvider({ children }) {
   const [sessionState, setSessionState] = useState(() => {
