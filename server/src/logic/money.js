@@ -13,3 +13,11 @@ export function fromKobo(kobo) {
 export function percentOfKobo(amountKobo, percent) {
   return Math.round((amountKobo * percent) / 100);
 }
+
+// Every money column is DECIMAL(14, 2), which overflows past this value.
+// Checking at the edge turns a 500 from Postgres into a 400 with a message.
+export const MAX_MONEY_KOBO = 99999999999999;
+
+export function exceedsMaxAmount(value) {
+  return Math.abs(toKobo(value)) > MAX_MONEY_KOBO;
+}

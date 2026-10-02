@@ -1,5 +1,23 @@
 import { fromKobo, percentOfKobo, toKobo } from './money.js';
 
+export const MIN_FILING_YEAR = 1990;
+export const NTA_FIRST_YEAR = 2026;
+
+// Single source of truth for the filing year so validation, computation and
+// persistence can never disagree on which tax table applies.
+export function resolveFilingYear(value) {
+  const currentYear = new Date().getFullYear();
+  if (value === undefined || value === null || value === '') return currentYear;
+
+  const year = Number(value);
+  if (!Number.isInteger(year) || year < MIN_FILING_YEAR || year > currentYear + 1) {
+    throw new RangeError(
+      `Filing year must be a whole number between ${MIN_FILING_YEAR} and ${currentYear + 1}.`,
+    );
+  }
+  return year;
+}
+
 const TAX_PROFILES = {
   legacy_pita: {
     validFrom: 0,
@@ -12,18 +30,16 @@ const TAX_PROFILES = {
       { band: 'Next ₦1,600,000', limitKobo: 160000000, rate: 21 },
       { band: 'Above ₦3,200,000', limitKobo: Infinity, rate: 24 },
     ],
+    // CRA only: statutory component plus the 20% of gross component.
     computeRelief: (input) => {
       const grossKobo = toKobo(input.grossIncome);
       const statutoryCraKobo = Math.max(toKobo(200000), percentOfKobo(grossKobo, 1));
       const craKobo = statutoryCraKobo + percentOfKobo(grossKobo, 20);
-      return { 
-        reliefAmount: fromKobo(craKobo), 
-        reliefBasis: 'CRA' 
-      };
-    }
+      return { reliefAmount: fromKobo(craKobo), reliefBasis: 'CRA' };
+    },
   },
   nta_2025: {
-    validFrom: 2026,
+    validFrom: NTA_FIRST_YEAR,
     validTo: Infinity,
     bands: [
       { band: 'First ₦800,000', limitKobo: 80000000, rate: 0 },
@@ -33,15 +49,14 @@ const TAX_PROFILES = {
       { band: 'Next ₦25,000,000', limitKobo: 2500000000, rate: 23 },
       { band: 'Above ₦50,000,000', limitKobo: Infinity, rate: 25 },
     ],
+    // NHIS is deductible in full, housing loan interest gives 20% relief.
+    extraDeductionRates: { nhisContribution: 100, housingLoanInterest: 20 },
     computeRelief: (input) => {
       const rentPaidAnnual = input.rentPaidAnnual || 0;
       const reliefAmount = Math.min(percentOfKobo(toKobo(rentPaidAnnual), 20), toKobo(500000));
-      return { 
-        reliefAmount: fromKobo(reliefAmount), 
-        reliefBasis: 'RENT_RELIEF' 
-      };
-    }
-  }
+      return { reliefAmount: fromKobo(reliefAmount), reliefBasis: 'RENT_RELIEF' };
+    },
+  },
 };
 
 function selectProfile(filingYear) {
@@ -53,10 +68,10 @@ function selectProfile(filingYear) {
   throw new Error(`No tax profile available for filing year ${filingYear}`);
 }
 
-export function computeTax(input) {
-  const filingYear = input.filingYear || 2025; // Default to legacy for backward compatibility
+export function computeTax(input = {}) {
+  const filingYear = resolveFilingYear(input.filingYear);
   const profile = selectProfile(filingYear);
-  
+
   const grossKobo = toKobo(input.grossIncome);
   const pensionKobo = toKobo(input.pensionContribution);
   const lifeAssuranceKobo = toKobo(input.lifeAssurance);
@@ -64,8 +79,12 @@ export function computeTax(input) {
 
   const { reliefAmount, reliefBasis } = profile.computeRelief(input);
   const reliefKobo = toKobo(reliefAmount);
-  
-  const totalDeductionsKobo = pensionKobo + lifeAssuranceKobo + nhfKobo;
+
+  const extraDeductionKobo = Object.entries(profile.extraDeductionRates ?? {}).reduce(
+    (sum, [field, rate]) => sum + percentOfKobo(toKobo(input[field]), rate),
+    0,
+  );
+  const totalDeductionsKobo = pensionKobo + lifeAssuranceKobo + nhfKobo + extraDeductionKobo;
   const taxableKobo = Math.max(0, grossKobo - reliefKobo - totalDeductionsKobo);
 
   let remainingKobo = taxableKobo;
@@ -86,6 +105,7 @@ export function computeTax(input) {
   });
 
   return {
+    filingYear,
     reliefAmount,
     reliefBasis,
     totalDeductions: fromKobo(totalDeductionsKobo),

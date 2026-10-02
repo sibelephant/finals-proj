@@ -79,7 +79,13 @@ export default function DeclarationForm() {
       const response = await submitIncomeDeclaration(values);
       navigate('/computation', { state: response });
     } catch (err) {
-      setSubmitError(err.message || 'Submission failed. Please try again.');
+      // Show the server's per field messages rather than a generic failure.
+      if (err.errors && Object.keys(err.errors).length) {
+        setErrors(err.errors);
+        setSubmitError('Please correct the highlighted fields.');
+      } else {
+        setSubmitError(err.message || 'Submission failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

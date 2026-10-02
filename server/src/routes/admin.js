@@ -12,14 +12,25 @@ router.get('/taxpayers', async (req, res, next) => {
   try {
     const taxpayers = await models.User.findAll({
       where: { role: 'taxpayer' },
+      include: [{ model: models.TaxReturn, as: 'taxReturns', order: [['filingYear', 'DESC']] }],
       order: [['createdAt', 'DESC']],
     });
     await models.AdminLog.create({ userId: req.auth.sub, action: 'LIST_TAXPAYERS', metadata: { count: taxpayers.length } });
-    return res.json({ taxpayers: taxpayers.map(serializeUser) });
+    return res.json({ taxpayers: taxpayers.map(withComplianceStatus) });
   } catch (error) {
     return next(error);
   }
 });
+
+// ponytail: derived from the loaded association. If this ever needs a column,
+// move it to a SELECT with an ORDER BY instead of an N+1 per row.
+function withComplianceStatus(user) {
+  const latest = user.taxReturns?.[0];
+  return serializeUser({
+    ...user.toJSON(),
+    complianceStatus: latest ? (latest.filingStatus === 'paid' ? 'compliant' : 'pending') : 'pending',
+  });
+}
 
 router.get('/taxpayers/:id', async (req, res, next) => {
   try {
@@ -28,7 +39,7 @@ router.get('/taxpayers/:id', async (req, res, next) => {
     });
     if (!user || user.role !== 'taxpayer') return res.status(404).json({ message: 'Taxpayer not found.' });
     await models.AdminLog.create({ userId: req.auth.sub, action: 'VIEW_TAXPAYER', metadata: { targetUserId: req.params.id } });
-    return res.json({ user: await serializeUser(user), returns: user.taxReturns.map(serializeTaxReturn) });
+    return res.json({ user: withComplianceStatus(user), returns: user.taxReturns.map(serializeTaxReturn) });
   } catch (error) {
     return next(error);
   }
@@ -69,6 +80,7 @@ router.get('/reports', async (req, res, next) => {
 
     await models.AdminLog.create({ userId: req.auth.sub, action: 'VIEW_REPORTS', metadata: {} });
     return res.json({
+      totalTaxpayers,
       totalRevenue: Number(totalRevenue || 0),
       complianceRate,
       pendingReturns,

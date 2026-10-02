@@ -23,7 +23,12 @@ async function request(path, options = {}) {
   const data = contentType.includes('application/json') ? await response.json() : await response.blob();
 
   if (!response.ok) {
-    throw new Error(data?.message || 'Request failed. Please try again.');
+    // Carry the server's per field errors through, otherwise a rejected
+    // declaration only ever shows "Request failed."
+    const error = new Error(data?.message || Object.values(data?.errors || {})[0] || 'Request failed. Please try again.');
+    error.status = response.status;
+    error.errors = data?.errors;
+    throw error;
   }
   return data;
 }

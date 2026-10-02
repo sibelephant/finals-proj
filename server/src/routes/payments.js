@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import models, { sequelize } from '../models/index.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
@@ -13,11 +14,24 @@ router.post('/', requireAuth, requireRole('taxpayer'), async (req, res, next) =>
 
     const paidAt = new Date();
     const payment = await sequelize.transaction(async (transaction) => {
+      // Reject a repeat payment instead of letting the unique constraint on
+      // Payments.tax_return_id turn it into a 500.
+      const existing = await models.Payment.findOne({
+        where: { taxReturnId: taxReturn.id, paymentStatus: 'successful' },
+        include: [{ model: models.TaxReturn, as: 'taxReturn', where: { userId: req.auth.sub } }],
+        transaction,
+      });
+      if (existing) {
+        const conflict = new Error('This tax return has already been paid.');
+        conflict.status = 409;
+        throw conflict;
+      }
+
       const created = await models.Payment.create(
         {
           taxReturnId: taxReturn.id,
           amount: taxReturn.taxPayable,
-          paymentReference: `PAY-ETAX-${Date.now()}`,
+          paymentReference: `PAY-ETAX-${randomUUID()}`,
           paymentStatus: 'successful',
           paidAt,
         },

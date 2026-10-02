@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
@@ -12,7 +13,8 @@ export async function verifyPassword(plaintext, hash) {
   return bcrypt.compare(plaintext, hash);
 }
 
-export function generateTIN(date = new Date(), randomNumber = Math.floor(Math.random() * 1000000)) {
+// randomInt comes from crypto, not Math.random, so TINs are not predictable.
+export function generateTIN(date = new Date(), randomNumber = randomInt(0, 1000000)) {
   const year = date.getUTCFullYear();
   const sequence = String(randomNumber).padStart(6, '0').slice(-6);
   return `TIN-${year}-${sequence}`;

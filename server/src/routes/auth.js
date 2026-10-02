@@ -23,13 +23,12 @@ router.post('/register', authLimiter, async (req, res, next) => {
     const existing = await models.User.findOne({ where: { email: req.body.email } });
     if (existing) return res.status(409).json({ message: 'Email address is already registered.' });
 
-    const user = await models.User.create({
+    const user = await createWithUniqueTin({
       fullName: req.body.fullName,
       email: req.body.email,
       passwordHash: await hashPassword(req.body.password),
       phone: req.body.phone,
       address: req.body.address,
-      tin: generateTIN(),
       role: 'taxpayer',
     });
 
@@ -55,5 +54,21 @@ router.post('/login', authLimiter, async (req, res, next) => {
     return next(error);
   }
 });
+
+// The TIN space is 1,000,000 per year, so collisions happen eventually. Retry
+// a few times rather than failing the registration.
+async function createWithUniqueTin(attributes, attempts = 5) {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await models.User.create({ ...attributes, tin: generateTIN() });
+    } catch (error) {
+      const isTinCollision =
+        error.name === 'SequelizeUniqueConstraintError' &&
+        error.errors?.some((e) => e.path === 'tin');
+      if (!isTinCollision || attempt === attempts) throw error;
+    }
+  }
+  throw new Error('Could not allocate a unique TIN.');
+}
 
 export default router;

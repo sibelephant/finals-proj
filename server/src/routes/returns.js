@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import models, { sequelize } from '../models/index.js';
-import { computeTax } from '../logic/tax.js';
+import { computeTax, resolveFilingYear } from '../logic/tax.js';
 import { validateIncomeDeclaration } from '../logic/validation.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { serializeDeclaration, serializePayment, serializeTaxReturn } from '../utils/serialize.js';
@@ -29,7 +29,7 @@ router.post('/', requireAuth, requireRole('taxpayer'), async (req, res, next) =>
       const taxReturn = await models.TaxReturn.create(
         {
           userId: req.auth.sub,
-          filingYear: req.body.filingYear || new Date().getFullYear(),
+          filingYear: resolveFilingYear(req.body.filingYear),
           filingStatus: 'submitted',
           grossIncome: payload.grossIncome,
           reliefAmount: result.reliefAmount,

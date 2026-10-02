@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
-import models from '../models/index.js';
+import { Op } from 'sequelize';
+import models, { sequelize } from '../models/index.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { parseBankStatementCSV } from '../logic/bankStatementParser.js';
 import { serializeTransaction } from '../utils/serialize.js';
@@ -28,22 +29,54 @@ router.post('/upload', requireAuth, requireRole('taxpayer'), (req, res, next) =>
       const csvText = req.file.buffer.toString('utf-8');
       const result = parseBankStatementCSV(csvText);
 
-      if (!result.transactions.length) {
-        return res.status(422).json({ message: 'No transactions could be parsed from the file.', errors: result.errors });
+      if (result.error) {
+        return res.status(422).json({ message: result.error, errors: [] });
       }
 
-      const created = await models.BankTransaction.bulkCreate(
-        result.transactions.map((t) => ({
-          userId: req.auth.sub,
-          ...t,
-          sourceFile: req.file.originalname,
-        })),
-      );
+      if (!result.transactions.length) {
+        return res.status(422).json({ message: 'No transactions could be parsed from the file.', errors: result.errors ?? [] });
+      }
+
+      // Re-uploading the same statement must not double the user's income.
+      // ponytail: source_file plus row number is the natural key. Add a
+      // fingerprint column if statements ever need importing twice on purpose.
+      const rows = result.transactions.map((t, index) => ({
+        userId: req.auth.sub,
+        ...t,
+        sourceFile: req.file.originalname,
+        sourceRow: index + 1,
+      }));
+
+      const created = await sequelize.transaction(async (transaction) => {
+        const names = [...new Set(rows.map((r) => r.sourceFile))];
+        const previous = await models.BankTransaction.findAll({
+          where: { userId: req.auth.sub, sourceFile: { [Op.in]: names } },
+          attributes: ['sourceFile', 'sourceRow'],
+          transaction,
+        });
+        const seen = new Set(previous.map((t) => `${t.sourceFile}#${t.sourceRow}`));
+
+        const fresh = rows.filter((r) => {
+          const key = `${r.sourceFile}#${r.sourceRow}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        if (!fresh.length) return [];
+
+        await models.BankTransaction.bulkCreate(fresh, { transaction });
+        return models.BankTransaction.findAll({
+          where: { userId: req.auth.sub, sourceFile: { [Op.in]: names } },
+          order: [['transactionDate', 'DESC']],
+          transaction,
+        });
+      });
 
       return res.status(201).json({
         transactions: created.map(serializeTransaction),
         summary: result.summary,
-        errors: result.errors,
+        errors: result.errors ?? [],
       });
     } catch (error) {
       return next(error);

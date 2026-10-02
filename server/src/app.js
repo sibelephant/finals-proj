@@ -28,9 +28,31 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/bank-statements', bankStatementRoutes);
 
+app.use((req, res) => {
+  res.status(404).json({ message: 'Resource not found.' });
+});
+
+// Translate database errors into honest status codes instead of a blanket 500,
+// so a duplicate filing or an out of range amount is a client mistake.
 app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+
+  if (err.status) {
+    return res.status(err.status).json({ message: err.message });
+  }
+
+  if (err.name === 'SequelizeUniqueConstraintError') {
+    return res.status(409).json({ message: 'That record already exists.' });
+  }
+  if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeForeignKeyConstraintError') {
+    return res.status(400).json({ message: 'The submitted data is not valid.' });
+  }
+  if (err.name === 'RangeError' || err.name === 'SequelizeDatabaseError') {
+    return res.status(400).json({ message: 'The submitted data is out of range.' });
+  }
+
   console.error(err);
-  res.status(500).json({ message: 'Unexpected server error.' });
+  return res.status(500).json({ message: 'Unexpected server error.' });
 });
 
 export default app;

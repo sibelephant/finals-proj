@@ -1,3 +1,6 @@
+import { exceedsMaxAmount } from './money.js';
+import { resolveFilingYear } from './tax.js';
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateRegistration(payload = {}) {
@@ -15,7 +18,14 @@ export function validateRegistration(payload = {}) {
 
 export function validateIncomeDeclaration(payload = {}) {
   const errors = {};
-  const filingYear = toNumber(payload.filingYear) || new Date().getFullYear();
+
+  let filingYear;
+  try {
+    filingYear = resolveFilingYear(payload.filingYear);
+  } catch {
+    errors.filingYear = 'Filing year must be a whole number between 1990 and next year.';
+    filingYear = new Date().getFullYear();
+  }
   const isLegacyRegime = filingYear <= 2025;
   
   const grossIncome = toNumber(payload.grossIncome);
@@ -42,10 +52,13 @@ export function validateIncomeDeclaration(payload = {}) {
     housingLoanInterest,
   };
 
-  // Validate all fields are non-negative finite numbers
+  // Validate all fields are non-negative finite numbers within DECIMAL(14, 2) range
   Object.entries(allFields).forEach(([field, value]) => {
     if (!Number.isFinite(value)) errors[field] = 'Enter a valid number.';
     if (Number.isFinite(value) && value < 0) errors[field] = 'Amount cannot be negative.';
+    if (Number.isFinite(value) && exceedsMaxAmount(value)) {
+      errors[field] = 'Amount is too large.';
+    }
   });
 
   // Required field validation

@@ -1,7 +1,10 @@
-import { computeTax } from '../tax.js';
+import { computeTax, resolveFilingYear } from '../tax.js';
 
 describe('computeTax', () => {
   describe('Legacy PITA (filingYear <= 2025)', () => {
+    // The default filing year is the current year, so legacy cases say so.
+    const legacyTax = (input) => computeTax({ filingYear: 2025, ...input });
+
     it.each([
       {
         name: '₦250k gross with no taxable income after CRA',
@@ -69,7 +72,7 @@ describe('computeTax', () => {
         },
       },
     ])('$name', ({ input, expected }) => {
-      const result = computeTax(input);
+      const result = legacyTax(input);
 
       expect(result.reliefAmount).toBe(expected.cra);
       expect(result.totalDeductions).toBe(expected.totalDeductions);
@@ -87,14 +90,14 @@ describe('computeTax', () => {
       { taxableIncome: 1600000, grossIncome: 2250000, taxPayable: 224000 },
       { taxableIncome: 3200000, grossIncome: 4250000, taxPayable: 560000 },
     ])('handles exact taxable band boundary ₦$taxableIncome', ({ grossIncome, taxableIncome, taxPayable }) => {
-      const result = computeTax({ grossIncome });
+      const result = legacyTax({ grossIncome });
 
       expect(result.taxableIncome).toBe(taxableIncome);
       expect(result.taxPayable).toBe(taxPayable);
     });
 
     it('applies declared deductions and pension contribution exactly as supplied', () => {
-      const result = computeTax({
+      const result = legacyTax({
         grossIncome: 4800000,
         employmentIncome: 4200000,
         businessIncome: 600000,
@@ -122,11 +125,11 @@ describe('computeTax', () => {
         nhfContribution: 2222.22,
       };
 
-      expect(JSON.stringify(computeTax(input))).toBe(JSON.stringify(computeTax(input)));
+      expect(JSON.stringify(legacyTax(input))).toBe(JSON.stringify(legacyTax(input)));
     });
 
     it('rounds monetary values to fixed two-decimal precision without drift', () => {
-      const result = computeTax({
+      const result = legacyTax({
         grossIncome: 1000000.33,
         pensionContribution: 80000.03,
         lifeAssurance: 1000.01,
@@ -142,7 +145,7 @@ describe('computeTax', () => {
 
     it('preserves exact legacy behavior after refactoring (regression test)', () => {
       const input = { grossIncome: 2000000, filingYear: 2025 };
-      const result = computeTax(input);
+      const result = legacyTax(input);
 
       expect(result).toMatchObject({
         reliefAmount: 600000,
@@ -263,6 +266,86 @@ describe('computeTax', () => {
         taxPayable: 156000, // 0 on first 800k + 15% on remaining 1.04M
         effectiveRate: 7.8,
       });
+    });
+  });
+
+  describe('filing year resolution', () => {
+    it('defaults to the current year, not a hardcoded year', () => {
+      const currentYear = new Date().getFullYear();
+
+      expect(computeTax({ grossIncome: 1000000 }).filingYear).toBe(currentYear);
+    });
+
+    // covers: tax.js defaulted to 2025 while validation and persistence used
+    // the current year, so a yearless return was priced on the wrong table
+    it('prices a yearless return with the same regime validation applies', () => {
+      const currentYear = new Date().getFullYear();
+      const withoutYear = computeTax({ grossIncome: 900000 });
+      const explicit = computeTax({ grossIncome: 900000, filingYear: currentYear });
+
+      expect(withoutYear.bandBreakdown.map((b) => b.rate)).toEqual(explicit.bandBreakdown.map((b) => b.rate));
+      expect(withoutYear.taxPayable).toBe(explicit.taxPayable);
+    });
+
+    it.each([['abc'], [0], [1980], [3000], [2026.5], [{}]])('rejects filing year %p', (filingYear) => {
+      expect(() => resolveFilingYear(filingYear)).toThrow(RangeError);
+    });
+
+    it.each([[2025], [2026], [1990]])('accepts filing year %i', (filingYear) => {
+      expect(resolveFilingYear(filingYear)).toBe(filingYear);
+    });
+
+    it.each([[undefined], [null], ['']])('falls back to the current year for %p', (filingYear) => {
+      expect(resolveFilingYear(filingYear)).toBe(new Date().getFullYear());
+    });
+
+    it('throws rather than silently pricing an unresolvable year', () => {
+      expect(() => computeTax({ grossIncome: 1000000, filingYear: 'nonsense' })).toThrow(RangeError);
+    });
+  });
+
+  describe('NTA extra deductions', () => {
+    // covers: nhisContribution and housingLoanInterest were collected, stored
+    // and displayed but never deducted, so declared relief was silently ignored
+    it('deducts NHIS in full and housing loan interest at 20%', () => {
+      const base = { filingYear: 2026, grossIncome: 5000000 };
+      const plain = computeTax(base);
+      const withExtras = computeTax({
+        ...base,
+        nhisContribution: 100000,
+        housingLoanInterest: 400000,
+      });
+
+      expect(withExtras.totalDeductions).toBe(180000);
+      expect(withExtras.taxableIncome).toBe(plain.taxableIncome - 180000);
+      expect(withExtras.taxPayable).toBeLessThan(plain.taxPayable);
+    });
+
+    it('leaves the deduction total at zero when the extra fields are absent', () => {
+      expect(computeTax({ filingYear: 2026, grossIncome: 5000000 }).totalDeductions).toBe(0);
+    });
+
+    it('does not apply NTA extra deductions under the legacy profile', () => {
+      const result = computeTax({
+        filingYear: 2025,
+        grossIncome: 5000000,
+        nhisContribution: 100000,
+        housingLoanInterest: 400000,
+      });
+
+      expect(result.totalDeductions).toBe(0);
+    });
+
+    it('never deducts more than gross income', () => {
+      const result = computeTax({
+        filingYear: 2026,
+        grossIncome: 1000000,
+        nhisContribution: 900000,
+        housingLoanInterest: 900000,
+      });
+
+      expect(result.taxableIncome).toBe(0);
+      expect(result.taxPayable).toBe(0);
     });
   });
 });

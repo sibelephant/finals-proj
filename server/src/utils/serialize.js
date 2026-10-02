@@ -1,10 +1,10 @@
-export async function serializeUser(user) {
+export function serializeUser(user) {
   if (!user) return null;
   const plain = user.toJSON ? user.toJSON() : user;
   const { passwordHash, ...safe } = plain;
 
-  if (user.getComplianceStatus && user.role === 'taxpayer') {
-    safe.complianceStatus = await user.getComplianceStatus();
+  if (user.complianceStatus) {
+    safe.complianceStatus = user.complianceStatus;
   }
 
   return safe;

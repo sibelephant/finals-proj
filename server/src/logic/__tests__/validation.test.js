@@ -162,6 +162,35 @@ describe('validation logic', () => {
     });
   });
 
+  describe('validateIncomeDeclaration - filing year and range guards', () => {
+    // covers: filingYear was never validated, so 'abc' reached computeTax
+    // and became a 500 and 1999 was priced with a modern table
+    it.each([['abc'], [1980], [3000], [0], [2026.5]])('rejects filing year %p with a field error', (filingYear) => {
+      const result = validateIncomeDeclaration({ filingYear, grossIncome: 1000000 });
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.filingYear).toMatch(/filing year/i);
+    });
+
+    it.each([[2025], [2026]])('accepts filing year %i', (filingYear) => {
+      expect(validateIncomeDeclaration({ filingYear, grossIncome: 1000000 }).valid).toBe(true);
+    });
+
+    // covers: DECIMAL(14, 2) overflow turned into a 500 from Postgres
+    it('rejects an amount larger than the column can hold', () => {
+      const result = validateIncomeDeclaration({ filingYear: 2026, grossIncome: 1e13 });
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.grossIncome).toBe('Amount is too large.');
+    });
+
+    it('accepts an amount just inside the column range', () => {
+      const result = validateIncomeDeclaration({ filingYear: 2026, grossIncome: 999999999999 });
+
+      expect(result.valid).toBe(true);
+    });
+  });
+
   describe('validateIncomeDeclaration - Common validation rules', () => {
     it('requires positive gross income for any regime', () => {
       expect(validateIncomeDeclaration({ filingYear: 2025, grossIncome: 0 }).valid).toBe(false);

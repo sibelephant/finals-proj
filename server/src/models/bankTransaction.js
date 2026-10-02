@@ -15,9 +15,10 @@ export default function defineBankTransaction(sequelize) {
       narration: { type: DataTypes.TEXT, allowNull: false },
       debit: { type: DataTypes.DECIMAL(14, 2), allowNull: false, defaultValue: 0 },
       credit: { type: DataTypes.DECIMAL(14, 2), allowNull: false, defaultValue: 0 },
-      balance: { type: DataTypes.DECIMAL(14, 2), allowNull: false, defaultValue: 0 },
+      balance: { type: DataTypes.DECIMAL(14, 2), allowNull: true, defaultValue: null },
       category: { type: DataTypes.STRING, allowNull: true },
       sourceFile: { type: DataTypes.STRING, allowNull: true },
+      sourceRow: { type: DataTypes.INTEGER, allowNull: true },
     },
     {
       sequelize,
