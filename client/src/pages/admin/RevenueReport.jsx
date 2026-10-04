@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Shell } from '../../components/Shell.jsx';
-import { PageTitle } from '../../components/Layout.jsx';
+import { Metric, PageTitle } from '../../components/Layout.jsx';
 import { Card, LoadingState } from '../../components/ui.jsx';
 import { getAdminStats } from '../../services/api.js';
 import { formatCurrency } from '../../utils/format.js';
@@ -15,32 +15,49 @@ export default function RevenueReport() {
       .catch((err) => setError(err.message || 'Failed to load revenue data.'));
   }, []);
 
-  const max = Math.max(...(stats?.revenueByPeriod ?? [{ amount: 1 }]).map((item) => item.amount), 1);
+  const periods = stats?.revenueByPeriod ?? [];
+  const max = Math.max(...periods.map((item) => item.amount), 1);
 
   return (
     <Shell>
-      <PageTitle title="Revenue report" detail="Monthly payment totals for the past 6 months." />
-      <Card>
-        {error
-          ? <p className="form-error">{error}</p>
-          : !stats
-            ? <LoadingState />
-            : (
+      <PageTitle
+        title="Revenue report"
+        detail="Monthly payment totals for the past 6 filing periods."
+      />
+
+      {error ? (
+        <p className="form-error" style={{ margin: '24px 0' }}>{error}</p>
+      ) : !stats ? (
+        <LoadingState />
+      ) : (
+        <section className="content-grid animate-in">
+          <Metric label="Total revenue collected" value={formatCurrency(stats.totalRevenue)} />
+          <Metric label="Paid returns" value={stats.paidReturns} />
+          <Metric label="Compliance rate" value={`${stats.complianceRate}%`} />
+          <Metric label="Pending returns" value={stats.pendingReturns} />
+
+          <Card className="wide">
+            <h2>Monthly revenue</h2>
+            {periods.length === 0 ? (
+              <p style={{ color: 'var(--muted)' }}>No revenue data available yet.</p>
+            ) : (
               <div className="bar-chart">
-                {stats.revenueByPeriod.map((item) => (
+                {periods.map((item) => (
                   <div className="bar-item" key={item.period}>
                     <div
                       className="bar"
-                      style={{ height: `${Math.max(8, (item.amount / max) * 180)}px` }}
+                      style={{ height: `${Math.max(10, (item.amount / max) * 200)}px` }}
                     >
                       <span>{formatCurrency(item.amount)}</span>
                     </div>
-                    <strong>{item.period}</strong>
+                    <strong className="bar-label">{item.period}</strong>
                   </div>
                 ))}
               </div>
             )}
-      </Card>
+          </Card>
+        </section>
+      )}
     </Shell>
   );
 }

@@ -6,17 +6,43 @@ import { Button } from './ui.jsx';
 export function Shell({ children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  function navLink(to, label) {
+    const isActive = location.pathname === to || location.pathname.startsWith(to + '/');
+    return (
+      <Link to={to} className={isActive ? 'active' : ''}>
+        {label}
+      </Link>
+    );
+  }
 
   return (
     <div>
       <header className="topbar">
         <Link className="brand" to="/">
-          <ShieldCheck size={26} />
+          <span className="brand-icon" aria-hidden="true">
+            <ShieldCheck size={18} />
+          </span>
           <span>E-Tax Filing</span>
         </Link>
-        <nav>
-          {user?.role === 'taxpayer' ? <Link to="/dashboard">Dashboard</Link> : null}
-          {user?.role === 'admin' ? <Link to="/admin">Admin</Link> : null}
+
+        <nav aria-label="Main navigation">
+          {user?.role === 'taxpayer' && (
+            <>
+              {navLink('/dashboard', 'Dashboard')}
+              {navLink('/declare', 'File Return')}
+              {navLink('/bank-statements', 'Bank Statements')}
+              {navLink('/documents', 'Documents')}
+            </>
+          )}
+          {user?.role === 'admin' && (
+            <>
+              {navLink('/admin', 'Overview')}
+              {navLink('/admin/taxpayers', 'Taxpayers')}
+              {navLink('/admin/reports', 'Reports')}
+            </>
+          )}
           {user ? (
             <Button
               variant="ghost"
@@ -24,13 +50,20 @@ export function Shell({ children }) {
                 logout();
                 navigate('/');
               }}
+              style={{ marginLeft: 4 }}
             >
-              <LogOut size={18} /> Logout
+              <LogOut size={16} /> Sign out
             </Button>
           ) : (
             <>
-              <Link to="/login">Login</Link>
-              <Link to="/register">Register</Link>
+              {navLink('/login', 'Sign in')}
+              <Link
+                to="/register"
+                className={`btn btn-primary ${location.pathname === '/register' ? 'active' : ''}`}
+                style={{ minHeight: 36, padding: '0 14px', fontSize: '0.88rem' }}
+              >
+                Register
+              </Link>
             </>
           )}
         </nav>

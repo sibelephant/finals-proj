@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, UserCheck, X } from 'lucide-react';
 import { Shell } from '../../components/Shell.jsx';
 import { PageTitle } from '../../components/Layout.jsx';
 import { Badge, Card, EmptyState, LoadingState } from '../../components/ui.jsx';
@@ -18,52 +18,97 @@ export default function TaxpayerList() {
   }, []);
 
   const filtered = useMemo(
-    () => (taxpayers ?? []).filter((item) =>
-      `${item.fullName} ${item.email} ${item.tin}`.toLowerCase().includes(query.toLowerCase())
-    ),
+    () =>
+      (taxpayers ?? []).filter((item) =>
+        `${item.fullName} ${item.email} ${item.tin}`
+          .toLowerCase()
+          .includes(query.toLowerCase()),
+      ),
     [query, taxpayers],
   );
 
   return (
     <Shell>
-      <PageTitle title="Taxpayer list" detail="Search and inspect registered taxpayers." />
+      <PageTitle
+        title="Taxpayer list"
+        detail={taxpayers ? `${taxpayers.length} registered taxpayer${taxpayers.length !== 1 ? 's' : ''}` : 'Search and inspect registered taxpayers.'}
+      />
+
       <Card>
-        <div className="search-box">
-          <Search size={18} />
+        <label className="search-box" htmlFor="taxpayer-search">
+          <Search size={16} />
           <input
-            placeholder="Search by name, email, or TIN"
+            id="taxpayer-search"
+            placeholder="Search by name, email, or TIN…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-        </div>
-        {error
-          ? <p className="form-error">{error}</p>
-          : !taxpayers
-            ? <LoadingState />
-            : filtered.length === 0
-              ? <EmptyState title="No taxpayers found" detail="Adjust the search term." />
-              : (
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Name</th><th>TIN</th><th>Email</th><th>Status</th><th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((user) => (
-                        <tr key={user.id}>
-                          <td>{user.fullName}</td>
-                          <td>{user.tin}</td>
-                          <td>{user.email}</td>
-                          <td><Badge status={user.complianceStatus} /></td>
-                          <td><Link to={`/admin/taxpayers/${user.id}`}>View</Link></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--faint)', display: 'flex', padding: 2 }}
+              aria-label="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </label>
+
+        {error ? (
+          <p className="form-error">{error}</p>
+        ) : !taxpayers ? (
+          <LoadingState />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            title={query ? 'No results found' : 'No taxpayers yet'}
+            detail={query ? `No taxpayers match "${query}". Try a different search term.` : 'Taxpayers will appear here once registered.'}
+          />
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>TIN</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((user) => (
+                  <tr key={user.id}>
+                    <td style={{ fontWeight: 600 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          width: 28, height: 28, borderRadius: '50%',
+                          background: 'var(--accent-bg)', color: 'var(--accent)',
+                          fontSize: '0.72rem', fontWeight: 700, flexShrink: 0,
+                        }}>
+                          {user.fullName?.charAt(0).toUpperCase()}
+                        </span>
+                        {user.fullName}
+                      </div>
+                    </td>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>{user.tin}</td>
+                    <td style={{ color: 'var(--muted)' }}>{user.email}</td>
+                    <td><Badge status={user.complianceStatus} /></td>
+                    <td>
+                      <Link
+                        to={`/admin/taxpayers/${user.id}`}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.88rem' }}
+                      >
+                        <UserCheck size={14} /> View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
     </Shell>
   );

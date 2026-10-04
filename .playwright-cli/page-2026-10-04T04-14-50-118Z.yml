@@ -1,0 +1,46 @@
+- generic [ref=f9e3]:
+  - banner [ref=f9e4]:
+    - link "E-Tax Filing" [ref=f9e5] [cursor=pointer]:
+      - /url: /
+    - navigation "Main navigation" [ref=f9e11]:
+      - link "Dashboard" [ref=f9e12] [cursor=pointer]:
+        - /url: /dashboard
+      - link "File Return" [ref=f9e13] [cursor=pointer]:
+        - /url: /declare
+      - link "Bank Statements" [ref=f9e14] [cursor=pointer]:
+        - /url: /bank-statements
+      - link "Documents" [ref=f9e15] [cursor=pointer]:
+        - /url: /documents
+      - button "Sign out" [ref=f9e16] [cursor=pointer]
+  - main [ref=f9e20]:
+    - generic [ref=f9e21]:
+      - generic [ref=f9e22]:
+        - paragraph [ref=f9e23]: Nigeria Personal Income Tax — 2026 filing season
+        - heading "Submit your PIT return in minutes, not days." [level=1] [ref=f9e24]
+        - paragraph [ref=f9e25]: A secure, guided portal for Nigerian taxpayers. Declare your income, let the server compute your liability under the NTA 2025 or Legacy PITA regime, confirm payment, and download your Tax Clearance Certificate — all in one place.
+        - generic [ref=f9e26]:
+          - generic [ref=f9e27]: Guided filing
+          - generic [ref=f9e31]: Instant computation
+          - generic [ref=f9e35]: PDF receipts & TCC
+        - generic [ref=f9e38]:
+          - link "Create account" [ref=f9e39] [cursor=pointer]:
+            - /url: /register
+          - link "Sign in" [ref=f9e43] [cursor=pointer]:
+            - /url: /login
+      - generic [ref=f9e46]:
+        - paragraph [ref=f9e47]: Portal at a glance
+        - generic [ref=f9e48]:
+          - generic [ref=f9e49]: Filing year
+          - strong [ref=f9e52]: "2026"
+        - generic [ref=f9e53]:
+          - generic [ref=f9e54]: API status
+          - strong [ref=f9e57]: Live
+        - generic [ref=f9e58]:
+          - generic [ref=f9e59]: Access roles
+          - strong [ref=f9e60]: Taxpayer + Admin
+        - generic [ref=f9e61]:
+          - generic [ref=f9e62]: Tax regime
+          - strong [ref=f9e63]: NTA 2025 / Legacy PITA
+        - generic [ref=f9e64]:
+          - generic [ref=f9e65]: Documents
+          - strong [ref=f9e66]: Receipt & TCC PDF

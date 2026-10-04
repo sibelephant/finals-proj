@@ -35,7 +35,7 @@ export function Badge({ status }) {
 }
 
 export function LoadingState({ label = 'Loading records...' }) {
-  return <div className="state-box">{label}</div>;
+  return <div className="state-box loading">{label}</div>;
 }
 
 export function EmptyState({ title, detail }) {

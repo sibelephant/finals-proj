@@ -1,0 +1,39 @@
+- generic [ref=f12e3]:
+  - banner [ref=f12e4]:
+    - link "E-Tax Filing" [ref=f12e5] [cursor=pointer]:
+      - /url: /
+    - navigation "Main navigation" [ref=f12e11]:
+      - link "Dashboard" [ref=f12e12] [cursor=pointer]:
+        - /url: /dashboard
+      - link "File Return" [ref=f12e13] [cursor=pointer]:
+        - /url: /declare
+      - link "Bank Statements" [ref=f12e14] [cursor=pointer]:
+        - /url: /bank-statements
+      - link "Documents" [ref=f12e15] [cursor=pointer]:
+        - /url: /documents
+      - button "Sign out" [ref=f12e16] [cursor=pointer]
+  - main [ref=f12e20]:
+    - generic [ref=f12e21]:
+      - generic [ref=f12e22]:
+        - heading "Good morning, Amina" [level=1] [ref=f12e23]
+        - paragraph [ref=f12e25]: Track your filings, review past returns, or start a new annual declaration.
+      - generic [ref=f12e26]:
+        - link "Upload Statement" [ref=f12e27] [cursor=pointer]:
+          - /url: /bank-statements
+        - link "File New Return" [ref=f12e31] [cursor=pointer]:
+          - /url: /declare
+    - generic [ref=f12e35]:
+      - generic [ref=f12e36]:
+        - heading "Profile" [level=2] [ref=f12e37]
+        - generic [ref=f12e38]:
+          - term [ref=f12e39]: Name
+          - definition [ref=f12e40]: Amina Yusuf
+          - term [ref=f12e41]: TIN
+          - definition [ref=f12e42]: TIN-2026-000001
+          - term [ref=f12e43]: Email
+          - definition [ref=f12e44]: amina.yusuf@example.com
+          - term [ref=f12e45]: Address
+          - definition [ref=f12e46]: 14 Marina Road, Lagos
+      - generic [ref=f12e47]:
+        - heading "Filing history" [level=2] [ref=f12e48]
+        - generic [ref=f12e49]: Loading records...

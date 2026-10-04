@@ -1,15 +1,14 @@
 import { Fragment, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
 import { Shell } from '../components/Shell.jsx';
 import { Metric, PageTitle } from '../components/Layout.jsx';
 import { Badge, Card, EmptyState, LoadingState } from '../components/ui.jsx';
 import { getTaxReturnById } from '../services/api.js';
 import { formatCurrency, formatDate } from '../utils/format.js';
 
-// Fields to exclude from the declaration detail list
 const SKIP_KEYS = new Set(['id', 'taxReturnId', 'createdAt', 'updatedAt']);
 
-// Human-readable labels for declaration fields
 const FIELD_LABELS = {
   grossIncome: 'Gross income',
   employmentIncome: 'Employment income',
@@ -39,25 +38,52 @@ export default function ReturnDetail() {
       .catch((err) => setError(err.message || 'Failed to load return.'));
   }, [id]);
 
-  if (error) return <Shell><p className="form-error" style={{ margin: '24px' }}>{error}</p></Shell>;
+  if (error) {
+    return (
+      <Shell>
+        <p className="form-error" style={{ margin: '24px' }}>{error}</p>
+      </Shell>
+    );
+  }
+
   if (!detail) return <Shell><LoadingState /></Shell>;
 
   const { taxReturn, declaration, payment } = detail;
-  if (!taxReturn) return <Shell><EmptyState title="Return not found" detail="Choose another filing from the dashboard." /></Shell>;
+
+  if (!taxReturn) {
+    return (
+      <Shell>
+        <EmptyState title="Return not found" detail="Choose another filing from the dashboard." />
+      </Shell>
+    );
+  }
 
   const declarationEntries = Object.entries(declaration ?? {})
     .filter(([key]) => !SKIP_KEYS.has(key) && key in FIELD_LABELS);
 
   return (
     <Shell>
-      <PageTitle title={`Filing detail — ${taxReturn.filingYear}`} detail="Read-only filing record." />
-      <section className="content-grid">
+      <PageTitle
+        title={`Filing — ${taxReturn.filingYear}`}
+        detail="Read-only record of this tax return."
+        action={
+          <Link
+            to="/dashboard"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.88rem', fontWeight: 600, color: 'var(--muted)' }}
+          >
+            <ArrowLeft size={16} /> Back to dashboard
+          </Link>
+        }
+      />
+
+      <section className="content-grid animate-in">
         <Metric label="Status" value={<Badge status={taxReturn.filingStatus} />} />
         <Metric label="Gross income" value={formatCurrency(taxReturn.grossIncome)} />
         <Metric label="Tax payable" value={formatCurrency(taxReturn.taxPayable)} />
         <Metric label="Paid on" value={payment?.paidAt ? formatDate(payment.paidAt) : '—'} />
+
         <Card className="wide">
-          <h2>Declaration</h2>
+          <h2>Income declaration</h2>
           <dl className="detail-list columns">
             {declarationEntries.map(([key, value]) => (
               <Fragment key={key}>

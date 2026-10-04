@@ -1,0 +1,30 @@
+- generic [ref=f5e3]:
+  - banner [ref=f5e4]:
+    - link "E-Tax Filing" [ref=f5e5] [cursor=pointer]:
+      - /url: /
+    - navigation "Main navigation" [ref=f5e11]:
+      - link "Dashboard" [ref=f5e12] [cursor=pointer]:
+        - /url: /dashboard
+      - link "File Return" [ref=f5e13] [cursor=pointer]:
+        - /url: /declare
+      - link "Bank Statements" [ref=f5e14] [cursor=pointer]:
+        - /url: /bank-statements
+      - link "Documents" [ref=f5e15] [cursor=pointer]:
+        - /url: /documents
+      - button "Sign out" [ref=f5e16] [cursor=pointer]
+  - main [ref=f5e20]:
+    - generic [ref=f5e22]:
+      - heading "Bank statement upload" [level=1] [ref=f5e23]
+      - paragraph [ref=f5e24]: Upload a CSV bank statement to extract and categorise your income for filing.
+    - generic [ref=f5e25]:
+      - generic [ref=f5e26]:
+        - heading "Upload CSV" [level=2] [ref=f5e27]
+        - button "Upload CSV file" [ref=f5e28] [cursor=pointer]:
+          - paragraph [ref=f5e32]:
+            - strong [ref=f5e33]: Click to browse
+            - text: or drag and drop
+          - paragraph [ref=f5e34]: CSV files only
+        - button "Upload & parse" [disabled] [ref=f5e35]
+      - generic [ref=f5e39]:
+        - heading "Imported transactions" [level=2] [ref=f5e40]
+        - generic [ref=f5e41]: Loading records...
