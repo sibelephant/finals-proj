@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
 import dotenv from 'dotenv';
 import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
@@ -12,6 +14,12 @@ import userRoutes from './routes/users.js';
 dotenv.config({ quiet: true });
 
 const app = express();
+
+// --- Security headers ---
+app.use(helmet());
+
+// --- Request logging ---
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
 app.use(express.json({ limit: '64kb' }));

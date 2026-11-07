@@ -26,7 +26,7 @@ export function signToken(payload, options = {}) {
     throw new Error('JWT_SECRET is required for token signing');
   }
   const expiresIn = options.expiresIn || '1h';
-  return jwt.sign(payload, secret, { expiresIn });
+  return jwt.sign(payload, secret, { algorithm: 'HS256', expiresIn });
 }
 
 export function verifyToken(token, options = {}) {
@@ -34,7 +34,7 @@ export function verifyToken(token, options = {}) {
   if (!secret) {
     throw new Error('JWT_SECRET is required for token verification');
   }
-  return jwt.verify(token, secret);
+  return jwt.verify(token, secret, { algorithms: ['HS256'] });
 }
 
 export function authorizeRole(decodedPayload, requiredRole) {
