@@ -1,0 +1,30 @@
+# Render Blueprint — deploy with "New > Blueprint" and point to this repo.
+# https://render.com/docs/blueprint-spec
+
+databases:
+  - name: etax-db
+    plan: free
+    databaseName: etax_filing
+    user: etax_admin
+
+services:
+  - type: web
+    name: etax-server
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: etax-db
+          property: connectionString
+      - key: CLIENT_ORIGIN
+        sync: false   # Set this manually to your frontend URL (e.g. https://your-app.vercel.app)
+

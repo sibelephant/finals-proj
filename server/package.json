@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node src/server.js",
+    "build": "echo 'No build step needed' && npm run db:migrate",
     "db:migrate": "sequelize-cli db:migrate --config src/config/database.cjs --migrations-path src/migrations --seeders-path src/seeders --models-path src/models",
     "db:seed": "sequelize-cli db:seed:all --config src/config/database.cjs --migrations-path src/migrations --seeders-path src/seeders --models-path src/models",
     "test": "vitest run",
@@ -27,10 +28,10 @@
     "multer": "^2.2.0",
     "pdfkit": "^0.19.1",
     "pg": "^8.22.0",
-    "sequelize": "^6.37.8"
+    "sequelize": "^6.37.8",
+    "sequelize-cli": "^6.6.5"
   },
   "devDependencies": {
-    "sequelize-cli": "^6.6.5",
     "supertest": "^7.2.2",
     "vitest": "^2.1.8"
   }

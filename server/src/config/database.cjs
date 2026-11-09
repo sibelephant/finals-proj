@@ -10,6 +10,13 @@ const base = {
   logging: false,
 };
 
+// Render (and most managed Postgres providers) require SSL.
+// Activate automatically when DATABASE_URL is present or DB_SSL=true.
+const needsSSL = process.env.DB_SSL === 'true' || !!process.env.DATABASE_URL;
+const sslOptions = needsSSL
+  ? { ssl: { require: true, rejectUnauthorized: false } }
+  : {};
+
 module.exports = {
   development: base,
   test: {
@@ -20,6 +27,6 @@ module.exports = {
   production: {
     ...base,
     use_env_variable: process.env.DATABASE_URL ? 'DATABASE_URL' : undefined,
-    dialectOptions: process.env.DB_SSL === 'true' ? { ssl: { require: true, rejectUnauthorized: false } } : {},
+    dialectOptions: sslOptions,
   },
 };
