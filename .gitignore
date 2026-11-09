@@ -6,3 +6,6 @@ dist/
 !.env.production.example
 npm-debug.log*
 .claude/settings.local.json
+.playwright-cli
+.claude
+PRODUCT.md
