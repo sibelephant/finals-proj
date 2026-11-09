@@ -22,7 +22,9 @@ services:
     # Not exposed to host — only reachable by other containers
 
   server:
-    build: ./server
+    build:
+      context: ./server
+      dockerfile: Dockerfile.compose
     container_name: etax-server
     restart: unless-stopped
     depends_on:
@@ -42,6 +44,7 @@ services:
   client:
     build:
       context: ./client
+      dockerfile: Dockerfile.compose
       args:
         VITE_API_BASE_URL: /api
     container_name: etax-client
